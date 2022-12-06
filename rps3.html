@@ -132,7 +132,7 @@
         const all_moves = ["rock", "paper", "scissors"];
         const all_pics = document.querySelectorAll(".pic");
         const all_btns = document.querySelectorAll("#me_controls button");
-        let me_move = "";
+        // let me_move = "";
         let me_score = 0;
         let comp_score = 0;
 
@@ -193,6 +193,7 @@
 
             let classiferResults = await model.predict(webcam.canvas);
             classiferResults.sort((a, b) => a.probability - b.probability).reverse();
+            let me_move = "";
             if (all_moves.includes(classiferResults[0].className)) me_move = classiferResults[0].className;
             if (me_move) window["me_" + me_move + "_pic"].style.display = "block";
 
