@@ -18,7 +18,6 @@
             background-color: #fef100;
             height: 100vh;
             font-family: 'Kdam', sans-serif;
-            font-family: sans-serif;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -146,6 +145,7 @@
                 thisBtn.disabled = false;
                 thisBtn.classList.remove("selected");
             });
+            me_move = "";
 
             let countdown = 3;
             resultText.innerHTML = countdown;

@@ -18,7 +18,6 @@
             background-color: #fef100;
             height: 100vh;
             font-family: 'Kdam', sans-serif;
-            font-family: sans-serif;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -170,6 +169,7 @@
             //     thisBtn.disabled = false;
             //     thisBtn.classList.remove("selected");
             // });
+            me_move = "";
 
             let countdown = 3;
             resultText.innerHTML = countdown;
@@ -193,7 +193,7 @@
 
             let classiferResults = await model.predict(webcam.canvas);
             classiferResults.sort((a, b) => a.probability - b.probability).reverse();
-            me_move = classiferResults[0].className;
+            if (all_moves.includes(classiferResults[0].className)) me_move = classiferResults[0].className;
             if (me_move) window["me_" + me_move + "_pic"].style.display = "block";
 
             let winlosetie = getResult(me_move, computer_move);
