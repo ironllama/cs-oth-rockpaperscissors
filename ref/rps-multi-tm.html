@@ -53,7 +53,7 @@
         #resultText {
             height: 1em;
             font-weight: bold;
-            margin: 0 auto;
+            margin: 0.3em auto;
         }
 
         #result>button {
@@ -115,10 +115,11 @@
         <div>
             <div id="comp_score_dash" class="dashScore">0</div>
             <div id="oppo_name" class="dashTitle">waiting...</div>
-            <div class="pic_wrapper">
-                <img id="comp_rock_pic" class="pic" src="rock.png">
-                <img id="comp_paper_pic" class="pic" src="paper.png">
-                <img id="comp_scissors_pic" class="pic" src="scissors.png">
+            <div is="comp_pic_wrapper" class="pic_wrapper">
+                <img id="comp_rock_pic" class="pic" src="../rock.png">
+                <img id="comp_paper_pic" class="pic" src="../paper.png">
+                <img id="comp_scissors_pic" class="pic" src="../scissors.png">
+                <img id="comp_none_pic" class="pic" src="../stickman.png">
             </div>
         </div>
         <div id="result">
@@ -129,17 +130,18 @@
             <div id="me_score_dash" class="dashScore">0</div>
             <div id="me_name" class="dashTitle">YOU</div>
             <input id="me_name_input" class="dashTitle" value="YOU">
-            <div class="pic_wrapper">
-                <img id="me_rock_pic" class="pic" src="rock.png">
-                <img id="me_paper_pic" class="pic" src="paper.png">
-                <img id="me_scissors_pic" class="pic" src="scissors.png">
+            <div id="me_pic_wrapper" class="pic_wrapper">
+                <img id="me_rock_pic" class="pic" src="../rock.png">
+                <img id="me_paper_pic" class="pic" src="../paper.png">
+                <img id="me_scissors_pic" class="pic" src="../scissors.png">
+                <img id="me_none_pic" class="pic" src="../stickman.png">
             </div>
         </div>
     </div>
     <div id="me_controls">
-        <button id="me_rock_btn" class="me_btn" onclick="me_click('rock')" disabled>ROCK</button>
+        <!-- <button id="me_rock_btn" class="me_btn" onclick="me_click('rock')" disabled>ROCK</button>
         <button id="me_paper_btn" class="me_btn" onclick="me_click('paper')" disabled>PAPER</button>
-        <button id="me_scissors_btn" class="me_btn" onclick="me_click('scissors')" disabled>SCISSORS</button>
+        <button id="me_scissors_btn" class="me_btn" onclick="me_click('scissors')" disabled>SCISSORS</button> -->
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
@@ -155,6 +157,9 @@
         const URL = "./rps_model/";
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
+
+        me_none_pic.style.display = "block";
+        comp_none_pic.style.display = "block";
 
         let ws = null;
         function wsConnect() {
@@ -203,6 +208,9 @@
                         else if (data.type === 'NAME') {
                             oppo_name.innerHTML = data.name;
                         }
+                        else if (data.type === 'GG') {
+                            sysMessage.innerHTML = "Good game! Refresh browser to start a new game.";
+                        }
                     }
                     catch (err) {
                         console.error("ERROR: ", err);
@@ -232,7 +240,8 @@
             await webcam.play();
             window.requestAnimationFrame(loop);
 
-            me_controls.appendChild(webcam.canvas);
+            // me_controls.appendChild(webcam.canvas);
+            comp_pic_wrapper.appendChild(webcam.canvas);
             let classiferResults = await model.predict(webcam.canvas);  // SLOW init.
 
             nextBtn.focus();
@@ -246,15 +255,23 @@
 
         function start() {
             ws.send(JSON.stringify({ type: 'READY' }));
+
+            all_pics.forEach(thisPic => thisPic.style.display = "none");
+            // all_btns.forEach(thisBtn => {
+            //     // thisBtn.disabled = false;
+            //     thisBtn.classList.remove("selected");
+            // });
+            resultText.innerHTML = "Waiting"
+            me_move = "";
         }
 
         function next() {
-            all_pics.forEach(thisPic => thisPic.style.display = "none");
-            all_btns.forEach(thisBtn => {
-                thisBtn.disabled = false;
-                thisBtn.classList.remove("selected");
-            });
-            me_move = "";
+            // all_pics.forEach(thisPic => thisPic.style.display = "none");
+            // all_btns.forEach(thisBtn => {
+            //     thisBtn.disabled = false;
+            //     // thisBtn.classList.remove("selected");
+            // });
+            // me_move = "";
 
             let countdown = 3;
             resultText.innerHTML = countdown;
@@ -298,6 +315,8 @@
 
         function getResult(me_move, computer_move) {
             if (me_move === computer_move) return "TIE";
+
+            if (computer_move === "") return "WIN"
 
             if (me_move === "rock" && computer_move === "scissors") return "WIN";
             if (me_move === "paper" && computer_move === "rock") return "WIN";

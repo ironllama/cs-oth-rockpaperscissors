@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock, Paper, Scissors</title>
+    <style>
+        @font-face {
+            font-family: 'Kdam';
+            src: url('KdamThmorPro-Regular.ttf');
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fef100;
+            height: 100vh;
+            font-family: 'Kdam', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #dashboard {
+            margin-bottom: 3em;
+            display: flex;
+        }
+
+        #dashboard>div {
+            height: 3.5em;
+            width: 8em;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        .dashTitle,
+        .dashScore {
+            font-size: 2em;
+        }
+
+        #dashboard>#result {
+            width: 2.75em;
+            font-size: 4em;
+            justify-content: center;
+            margin: 0 0.75em;
+        }
+
+        #resultText {
+            height: 1em;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        #result>button {
+            font-size: 0.5em;
+            outline: none;
+        }
+
+        .me_btn {
+            font-family: 'Kdam', sans-serif;
+            font-size: 3em;
+            /* height: 6rem; */
+            width: 6em;
+            border: 4px solid black;
+            border-radius: 10px;
+            margin-top: 0.5em;
+        }
+
+        .selected {
+            border: 4px solid aqua;
+        }
+
+        .pic {
+            display: none;
+            width: 10em;
+            height: 10em;
+        }
+
+        #sysMessage {
+            height: 1.25em;
+            margin-bottom: 1.25em;
+            font-size: 1.25em;
+            color: firebrick;
+        }
+
+        #me_name_input {
+            font-family: inherit;
+            width: 7em;
+            display: none;
+            text-align: center;
+        }
+
+        @media (max-width: 800px) {
+            body {
+                font-size: 2.5vw;
+            }
+
+            #me_controls {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="sysMessage"></div>
+    <div id="dashboard">
+        <div>
+            <div id="comp_score_dash" class="dashScore">0</div>
+            <div id="oppo_name" class="dashTitle">waiting...</div>
+            <div class="pic_wrapper">
+                <img id="comp_rock_pic" class="pic" src="rock.png">
+                <img id="comp_paper_pic" class="pic" src="paper.png">
+                <img id="comp_scissors_pic" class="pic" src="scissors.png">
+            </div>
+        </div>
+        <div id="result">
+            <div id="resultText"></div>
+            <!-- <button id="nextBtn" class="me_btn" onclick="next()">START</button> -->
+        </div>
+        <div>
+            <div id="me_score_dash" class="dashScore">0</div>
+            <div id="me_name" class="dashTitle">YOU</div>
+            <input id="me_name_input" class="dashTitle" value="YOU">
+            <div class="pic_wrapper">
+                <img id="me_rock_pic" class="pic" src="rock.png">
+                <img id="me_paper_pic" class="pic" src="paper.png">
+                <img id="me_scissors_pic" class="pic" src="scissors.png">
+            </div>
+        </div>
+    </div>
+    <div id="me_controls">
+        <!-- <button id="me_rock_btn" class="me_btn" onclick="me_click('rock')" disabled>ROCK</button>
+        <button id="me_paper_btn" class="me_btn" onclick="me_click('paper')" disabled>PAPER</button>
+        <button id="me_scissors_btn" class="me_btn" onclick="me_click('scissors')" disabled>SCISSORS</button> -->
+    </div>
+
+    <script>
+        const all_moves = ["rock", "paper", "scissors"];
+        const all_pics = document.querySelectorAll(".pic");
+        const all_btns = document.querySelectorAll("#me_controls button");
+        let me_move = "";
+        let me_score = 0;
+        let comp_score = 0;
+
+        let ws = null;
+        function wsConnect() {
+            if ("WebSocket" in window) {
+                // ws = new WebSocket("ws://localhost:8333/");
+                ws = new WebSocket("ws://192.168.3.101:8333/");
+                ws.onopen = function () {
+                    console.log("WS Open");
+                    ws.send(JSON.stringify({ type: 'MATCH' }));
+                };
+
+                ws.onclose = function () {
+                    console.log("WS Closed");
+                    sysMessage.innerHTML = "No connection. Please refresh page to try again."
+                };
+
+                ws.onmessage = function (inMessage) {
+                    console.log("WS: ", inMessage.data);
+                    try {
+                        const data = JSON.parse(inMessage.data);
+
+                        if (data.type === 'ID') {
+                            me_name.innerHTML = data.id;
+                        }
+                        else if (data.type === 'MATCH') {
+                            oppo_name.innerHTML = data.opponent;
+
+                            ws.send(JSON.stringify({ type: 'READY' }));
+                        }
+                        else if (data.type === 'START') {
+                            next();
+                        }
+                        else if (data.type === 'MOVE') {
+                            if (data.move) window["comp_" + data.move + "_pic"].style.display = "block";
+
+                            let winlosetie = getResult(me_move, data.move);
+                            resultText.innerHTML = winlosetie;
+                            if (winlosetie === "WIN") {
+                                me_score += 1;
+                                me_score_dash.innerHTML = me_score;
+                            }
+                            else if (winlosetie === "LOSE") {
+                                comp_score += 1;
+                                comp_score_dash.innerHTML = comp_score;
+                            }
+
+                            ws.send(JSON.stringify({ type: 'READY' }));
+                        }
+                        else if (data.type === 'NAME') {
+                            oppo_name.innerHTML = data.name;
+                        }
+                        else if (data.type === 'GG') {
+                            // sysMessage.innerHTML = "Good game! Refresh browser to start a new game.";
+                            me_move = "";
+                            oppo_name.innerHTML = "";
+                            me_score = 0;
+                            me_score_dash.innerHTML = me_score;
+                            comp_score = 0;
+                            comp_score_dash.innerHTML = comp_score;
+
+                            ws.send(JSON.stringify({ type: 'MATCH' }));
+                        }
+                    }
+                    catch (err) {
+                        console.error("ERROR: ", err);
+                    };
+                };
+
+                ws.sendMessage = function (message) {
+                    if (ws.readyState === ws.OPEN) {
+                        ws.send(JSON.stringify(message));
+                    }
+                };
+
+            } else {
+                alert("WebSockets NOT supported by your Browser!");
+            }
+        }
+        wsConnect();
+
+        function next() {
+            all_pics.forEach(thisPic => thisPic.style.display = "none");
+            // all_btns.forEach(thisBtn => {
+            //     thisBtn.disabled = false;
+            //     thisBtn.classList.remove("selected");
+            // });
+            me_move = "";
+
+            let countdown = 3;
+            resultText.innerHTML = countdown;
+            const timer = setInterval(function () {
+                countdown -= 1;
+                if (countdown > 0) resultText.innerHTML = countdown;
+                else {
+                    clearInterval(timer);
+                    playMove();
+                    // nextBtn.focus();
+                }
+            }, 1000);
+        }
+
+        async function playMove() {
+            // all_btns.forEach(thisBtn => thisBtn.disabled = true);
+
+            let computer_move_num = Math.floor(Math.random() * 3);
+            me_move = all_moves[computer_move_num];
+            // window["comp_" + me_move + "_pic"].style.display = "block";
+            window["me_" + me_move + "_pic"].style.display = "block";
+
+            ws.sendMessage({ type: 'MOVE', move: me_move });
+
+            // let classiferResults = await model.predict(webcam.canvas);
+            // classiferResults.sort((a, b) => a.probability - b.probability).reverse();
+            // let me_move = "";
+            // if (all_moves.includes(classiferResults[0].className)) me_move = classiferResults[0].className;
+            // if (me_move) window["me_" + me_move + "_pic"].style.display = "block";
+
+            // let winlosetie = getResult(me_move, computer_move);
+            // resultText.innerHTML = winlosetie;
+            // if (winlosetie === "WIN") {
+            //     me_score += 1;
+            //     me_score_dash.innerHTML = me_score;
+            // }
+            // else if (winlosetie === "LOSE") {
+            //     comp_score += 1;
+            //     comp_score_dash.innerHTML = comp_score;
+            // }
+        }
+
+        function getResult(me_move, computer_move) {
+            if (me_move === computer_move) return "TIE";
+
+            if (computer_move === "") return "WIN"
+
+            if (me_move === "rock" && computer_move === "scissors") return "WIN";
+            if (me_move === "paper" && computer_move === "rock") return "WIN";
+            if (me_move === "scissors" && computer_move === "paper") return "WIN";
+
+            return "LOSE";
+        }
+
+        me_name.onclick = function (evt) {
+            me_name.style.display = "none";
+            me_name_input.value = me_name.innerHTML;
+            me_name_input.style.display = "block";
+            me_name_input.select();
+        }
+
+        window.onkeydown = function (evt) {
+            if (evt.key === 'Enter' && document.activeElement === me_name_input) {
+                ws.sendMessage({ type: 'NAME', name: me_name_input.value });
+                me_name.innerHTML = me_name_input.value;
+                me_name.style.display = "block";
+                me_name_input.style.display = "none";
+            }
+            else if (evt.key === 'Escape') {
+                me_name.style.display = "block";
+                me_name_input.style.display = "none";
+            }
+        }
+    </script>
+</body>
+
+</html>

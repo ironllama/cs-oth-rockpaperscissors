@@ -100,6 +100,10 @@ function heartbeat() { this.isAlive = true; }
 const interval = setInterval(function ping() {
   wss.clients.forEach(function each(ws) {
     if (ws.isAlive === false) return ws.terminate();
+    if (ws.isAlive === false) {
+      ws.opponent.send({ type: 'GG' });
+      ws.terminate();
+    }
 
     ws.isAlive = false;
     ws.ping();
