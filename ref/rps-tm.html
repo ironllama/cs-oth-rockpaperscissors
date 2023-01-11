@@ -9,7 +9,7 @@
     <style>
         @font-face {
             font-family: 'Kdam';
-            src: url('KdamThmorPro-Regular.ttf');
+            src: url('../KdamThmorPro-Regular.ttf');
         }
 
         body {
@@ -101,9 +101,9 @@
             <div id="comp_score_dash" class="dashScore">0</div>
             <div class="dashTitle">COMPUTER</div>
             <div class="pic_wrapper">
-                <img id="comp_rock_pic" class="pic" src="rock.png">
-                <img id="comp_paper_pic" class="pic" src="paper.png">
-                <img id="comp_scissors_pic" class="pic" src="scissors.png">
+                <img id="comp_rock_pic" class="pic" src="../rock.png">
+                <img id="comp_paper_pic" class="pic" src="../paper.png">
+                <img id="comp_scissors_pic" class="pic" src="../scissors.png">
             </div>
         </div>
         <div id="result">
@@ -114,9 +114,9 @@
             <div id="me_score_dash" class="dashScore">0</div>
             <div class="dashTitle">YOU</div>
             <div class="pic_wrapper">
-                <img id="me_rock_pic" class="pic" src="rock.png">
-                <img id="me_paper_pic" class="pic" src="paper.png">
-                <img id="me_scissors_pic" class="pic" src="scissors.png">
+                <img id="me_rock_pic" class="pic" src="../rock.png">
+                <img id="me_paper_pic" class="pic" src="../paper.png">
+                <img id="me_scissors_pic" class="pic" src="../scissors.png">
             </div>
         </div>
     </div>
@@ -136,7 +136,7 @@
         let me_score = 0;
         let comp_score = 0;
 
-        const URL = "./rps_model/";
+        const URL = "../rps_model/";
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 

@@ -120,7 +120,7 @@
                 <img id="comp_scissors_pic" class="pic" src="scissors.png">
                 <img id="comp_move_pic" class="pic" src>
             </div>
-            <div id="comp_move_elem">rock</div>
+            <div id="comp_move_elem"></div>
         </div>
         <div id="result">
             <div id="resultText"></div>
@@ -136,7 +136,7 @@
                 <img id="me_scissors_pic" class="pic" src="scissors.png">
                 <img id="me_move_pic" class="pic" src>
             </div>
-            <div id="me_move_elem">scissors</div>
+            <div id="me_move_elem"></div>
         </div>
     </div>
     <div id="me_controls">
@@ -167,12 +167,14 @@
         orphanCanvas.height = 224;
 
         async function init() {
-            const modelURL = "http://192.168.2.106:8333/my_pose_model/model.json";
-            const metadataURL = "http://192.168.2.106:8333/my_pose_model/metadata.json";
+            const URL = "https://teachablemachine.withgoogle.com/models/aCzYZIscG/";
+
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
 
             model = await tmPose.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
-            await model.predict(orphanCanvas);  // Pre-running model prediction, so future ones are quicker.
+            // await model.predict(orphanCanvas);  // Pre-running model prediction, so future ones are quicker.
 
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then((mediaStream) => {
@@ -296,8 +298,8 @@
             // Prediction 2: run input through teachable machine classification model
             const prediction = await model.predict(posenetOutput);
             console.log("PRED: ", prediction);
-            let me_move = Math.max(...prediction.map(item => item.probability.toFixed(2)));
-
+            // let me_move = Math.max(...prediction.map(item => item.probability.toFixed(2)));
+            me_move = prediction.sort((a, b) => b.probability - a.probability)[0].className.toLowerCase();
 
             me_move_pic.style.display = "block";
             me_move_pic.src = pic;
