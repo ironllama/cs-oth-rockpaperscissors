@@ -174,7 +174,12 @@
 
             model = await tmPose.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
-            // await model.predict(orphanCanvas);  // Pre-running model prediction, so future ones are quicker.
+            try {
+                await model.predict(orphanCanvas);  // Pre-running model prediction, so future ones are quicker.
+            }
+            catch (err) {
+                console.error("PREDICT ERR:", err);
+            }
 
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then((mediaStream) => {
@@ -192,16 +197,17 @@
         let ws = null;
         function wsConnect() {
             // ws = new WebSocket("ws://localhost:8333");
-            ws = new WebSocket("ws://192.168.2.106:8333");
-            ws.onopen = function() {
+            // ws = new WebSocket("ws://192.168.2.106:8333");
+            ws = new WebSocket("ws://192.168.3.104:8333");
+            ws.onopen = function () {
                 console.log("WS is open!");
                 ws.sendMessage({ type: 'MATCH' });
             }
-            ws.onclose = function() {
+            ws.onclose = function () {
                 console.log("WS is closed!");
                 sysMessage.innerHTML = "No connection. Please refresh page to try again.";
             }
-            ws.onmessage = function(inMessage) {
+            ws.onmessage = function (inMessage) {
                 console.log("INCOMING: ", inMessage.data);
                 let message = JSON.parse(inMessage.data);
 
@@ -236,7 +242,7 @@
                 }
             }
 
-            ws.sendMessage = function(inMessage) {
+            ws.sendMessage = function (inMessage) {
                 if (ws.readyState === ws.OPEN) {
                     ws.send(JSON.stringify(inMessage));
                 }
@@ -289,8 +295,8 @@
 
             let widthOffset = (video.videoWidth - video.videoHeight) / 2
             orphanCanvas.getContext('2d').drawImage(video,
-              widthOffset, 0, video.width, video.videoHeight,
-              0, 0, orphanCanvas.width, orphanCanvas.height
+                widthOffset, 0, video.width, video.videoHeight,
+                0, 0, orphanCanvas.width, orphanCanvas.height
             );
             let pic = orphanCanvas.toDataURL('image/jpeg');
 
