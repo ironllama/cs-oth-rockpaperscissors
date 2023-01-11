@@ -9,7 +9,7 @@
     <style>
         @font-face {
             font-family: 'Kdam';
-            src: url('KdamThmorPro-Regular.ttf');
+            src: url('../KdamThmorPro-Regular.ttf');
         }
 
         body {
@@ -18,6 +18,7 @@
             background-color: #fef100;
             height: 100vh;
             font-family: 'Kdam', sans-serif;
+            color: #444;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -31,7 +32,7 @@
 
         #dashboard>div {
             height: 3.5em;
-            width: 8em;
+            /* width: 8em; */
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -41,6 +42,16 @@
         .dashTitle,
         .dashScore {
             font-size: 2em;
+        }
+
+        .picWrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #me_move_pic {
+            display: none;
         }
 
         #dashboard>#result {
@@ -115,11 +126,12 @@
         <div>
             <div id="comp_score_dash" class="dashScore">0</div>
             <div id="oppo_name" class="dashTitle">waiting...</div>
-            <div is="comp_pic_wrapper" class="pic_wrapper">
+            <div id="comp_pic_wrapper" class="picWrapper">
                 <img id="comp_rock_pic" class="pic" src="../rock.png">
                 <img id="comp_paper_pic" class="pic" src="../paper.png">
                 <img id="comp_scissors_pic" class="pic" src="../scissors.png">
                 <img id="comp_none_pic" class="pic" src="../stickman.png">
+                <img id="comp_move_pic" class="pic" src>
             </div>
         </div>
         <div id="result">
@@ -130,15 +142,17 @@
             <div id="me_score_dash" class="dashScore">0</div>
             <div id="me_name" class="dashTitle">YOU</div>
             <input id="me_name_input" class="dashTitle" value="YOU">
-            <div id="me_pic_wrapper" class="pic_wrapper">
+            <div id="me_pic_wrapper" class="picWrapper">
                 <img id="me_rock_pic" class="pic" src="../rock.png">
                 <img id="me_paper_pic" class="pic" src="../paper.png">
                 <img id="me_scissors_pic" class="pic" src="../scissors.png">
                 <img id="me_none_pic" class="pic" src="../stickman.png">
+                <img id="me_move_pic" class="pic" src>
             </div>
         </div>
     </div>
     <div id="me_controls">
+        <video id="video" autoplay></video>
         <!-- <button id="me_rock_btn" class="me_btn" onclick="me_click('rock')" disabled>ROCK</button>
         <button id="me_paper_btn" class="me_btn" onclick="me_click('paper')" disabled>PAPER</button>
         <button id="me_scissors_btn" class="me_btn" onclick="me_click('scissors')" disabled>SCISSORS</button> -->
@@ -154,18 +168,28 @@
         let me_score = 0;
         let comp_score = 0;
 
-        const URL = "./rps_model/";
+        // For 16:9 cameras.
+        video.width = 384;
+        video.height = 216;
+
+        const URL = "../rps_model/";
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
         me_none_pic.style.display = "block";
         comp_none_pic.style.display = "block";
 
+        // Since the TeachableMachine API likes to work with canvas...
+        let orphanCanvas = document.createElement('canvas');
+        orphanCanvas.width = 224;
+        orphanCanvas.height = 224;
+
         let ws = null;
         function wsConnect() {
             if ("WebSocket" in window) {
                 // ws = new WebSocket("ws://localhost:8333/");
-                ws = new WebSocket("ws://192.168.3.101:8333/");
+                // ws = new WebSocket("ws://192.168.3.101:8333/");
+                ws = new WebSocket("ws://192.168.1.220:8333/");
                 ws.onopen = function () {
                     console.log("WS Open");
                     ws.send(JSON.stringify({ type: 'MATCH' }));
@@ -177,7 +201,7 @@
                 };
 
                 ws.onmessage = function (inMessage) {
-                    console.log("WS: ", inMessage.data);
+                    console.log("WS: ", inMessage.data?.type);
                     try {
                         const data = JSON.parse(inMessage.data);
 
@@ -191,7 +215,11 @@
                             next();
                         }
                         else if (data.type === 'MOVE') {
-                            if (data.move) window["comp_" + data.move + "_pic"].style.display = "block";
+                            // if (data.move) window["comp_" + data.move + "_pic"].style.display = "block";
+                            comp_none_pic.style.display = "none";
+                            comp_move_pic.src = data.pic;
+
+                            comp_move_pic.style.display = "block";
 
                             let winlosetie = getResult(me_move, data.move);
                             resultText.innerHTML = winlosetie;
@@ -233,35 +261,49 @@
             model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
 
+            // Create a webcam capture
+            // const video = document.getElementById("video");
+
             // Convenience function to setup a webcam
-            const flip = true; // whether to flip the webcam
-            webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
-            await webcam.setup(); // request access to the webcam
-            await webcam.play();
-            window.requestAnimationFrame(loop);
+            // const flip = true; // whether to flip the webcam
+            // webcam = new tmImage.Webcam(300, 300, flip); // width, height, flip
+            // await webcam.setup(); // request access to the webcam
+            // await webcam.play();
+            // me_pic_wrapper.appendChild(webcam.canvas);
+            let classiferResults = await model.predict(orphanCanvas);  // SLOW init. Get it out of the way.
+
+            // window.requestAnimationFrame(loop);
 
             // me_controls.appendChild(webcam.canvas);
-            comp_pic_wrapper.appendChild(webcam.canvas);
-            let classiferResults = await model.predict(webcam.canvas);  // SLOW init.
+
+            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+                video.srcObject = stream;
+                video.play();
+            });
 
             nextBtn.focus();
         }
-        // init();
+        init();
 
-        async function loop() {
-            webcam.update(); // update the webcam frame
-            window.requestAnimationFrame(loop);
-        }
+        // async function loop() {
+        //     webcam.update(); // update the webcam frame
+        //     window.requestAnimationFrame(loop);
+        // }
 
         function start() {
             ws.send(JSON.stringify({ type: 'READY' }));
 
-            all_pics.forEach(thisPic => thisPic.style.display = "none");
+            // all_pics.forEach(thisPic => thisPic.style.display = "none");
             // all_btns.forEach(thisBtn => {
             //     // thisBtn.disabled = false;
             //     thisBtn.classList.remove("selected");
             // });
-            resultText.innerHTML = "Waiting"
+            me_none_pic.style.display = "block";
+            me_move_pic.style.display = "none";
+            comp_none_pic.style.display = "block";
+            comp_move_pic.style.display = "none";
+
+            resultText.innerHTML = "..."
             me_move = "";
         }
 
@@ -287,19 +329,33 @@
         }
 
         async function playMove() {
-            all_btns.forEach(thisBtn => thisBtn.disabled = true);
+            // all_btns.forEach(thisBtn => thisBtn.disabled = true);
 
             // let computer_move_num = Math.floor(Math.random() * 3);
             // let computer_move = all_moves[computer_move_num];
             // window["comp_" + computer_move + "_pic"].style.display = "block";
 
-            // let classiferResults = await model.predict(webcam.canvas);
-            // classiferResults.sort((a, b) => a.probability - b.probability).reverse();
-            // let me_move = "";
-            // if (all_moves.includes(classiferResults[0].className)) me_move = classiferResults[0].className;
-            if (me_move) window["me_" + me_move + "_pic"].style.display = "block";
+            // Create a canvas and transfer the video image to it.
+            // Hide the canvas.
+            // Reverse this after 3 seconds?
+            me_none_pic.style.display = "none";
 
-            ws.sendMessage({ type: 'MOVE', move: me_move });
+            let widthOffset = (video.videoWidth - video.videoHeight) / 2;
+            orphanCanvas.getContext('2d').drawImage(video,
+                widthOffset, 0, video.videoHeight, video.videoHeight,
+                0, 0, orphanCanvas.width, orphanCanvas.height,
+            );
+            let new_image = orphanCanvas.toDataURL('image/jpeg');
+            me_move_pic.src = new_image;
+            me_move_pic.style.display = "block";
+
+            let classiferResults = await model.predict(orphanCanvas);
+            classiferResults.sort((a, b) => a.probability - b.probability).reverse();
+            let me_move = "";
+            if (all_moves.includes(classiferResults[0].className)) me_move = classiferResults[0].className;
+            // if (me_move) window["me_" + me_move + "_pic"].style.display = "block";
+
+            ws.sendMessage({ type: 'MOVE', move: me_move, pic: new_image });
 
             // let winlosetie = getResult(me_move, computer_move);
             // resultText.innerHTML = winlosetie;
